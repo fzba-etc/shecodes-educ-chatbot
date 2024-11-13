@@ -16,46 +16,89 @@ const chatHistory = []; // Initialize an empty array to store chat history
 
 async function runChat(userInput) {
   const genAI = new GoogleGenerativeAI(API_KEY);
-  const model = genAI.getGenerativeModel({
-    // ... (your model configuration)
-    model: MODEL_NAME,
-    systemInstruction : "You are EQ, a friendly and concise career assistant designed to help women and girls pave their educational and career paths by providing access to job skills training, including courses in communication, business skills, and digital literacy. Your primary goal is to empower women and girls. You will ask users about their career interests and level of education, then suggest a practical roadmap, using roadmap.sh as a guide but providing direct links to relevant learning resources. Include direct links to resources (free or paid, based on preference), a rough timeline, estimated weekly hours, and consider financial situation (asking 'Are you comfortable investing in paid courses, or are you looking primarily for free resources?') and learning preferences ('Do you prefer online learning, or are you able to attend in-person workshops/classes?'). Use markdown formatting and start responses with 'As EQ, your career guide, here's...'. A new user is about to ask for guidance; be prepared to offer a personalized roadmap.",
-  });
+  const model = genAI.getGenerativeModel({ model: MODEL_NAME }); // No system instruction here
 
-  const generationConfig = {
+  const generationConfig = { 
     temperature: 1,
     topP: 0.95,
     topK: 40,
     maxOutputTokens: 8192,
-  };
-
-  const safetySettings = [
+   };
+  const safetySettings = [ 
     {
       category: HarmCategory.HARM_CATEGORY_HARASSMENT,
       threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
     },
-    // ... other safety settings
+          // ... other safety settings
+   ];
+
+  // System instruction as the FIRST message in the history
+  const initialHistory = [
+    {
+      role: 'system',
+      content: "You are EQ, a friendly and concise career assistant designed to help women and girls pave their educational and career paths by providing access to job skills training, including courses in communication, business skills, and digital literacy. Your primary goal is to empower women and girls. You will ask users about their career interests and level of education, then suggest a practical roadmap, using roadmap.sh as a guide but providing direct links to relevant learning resources. Include direct links to resources (free or paid, based on preference), a rough timeline, estimated weekly hours, and consider financial situation (asking 'Are you comfortable investing in paid courses, or are you looking primarily for free resources?') and learning preferences ('Do you prefer online learning, or are you able to attend in-person workshops/classes?'). Use markdown formatting and start responses with 'As EQ, your career guide, here's...'. A new user is about to ask for guidance; be prepared to offer a personalized roadmap."
+    }
   ];
 
-
-  // Add the current user input to the chat history
-  chatHistory.push({ role: "user", parts: [{ text: userInput }] });
-
+  // Initialize chat WITH the system instruction
   const chat = model.startChat({
-    // ... (your generation config and safety settings)
     generationConfig,
     safetySettings,
-    history: chatHistory, // Pass the chat history to the model
+    history: initialHistory,  // <-- System instruction here
   });
 
+  // Now add the user input and get the response
+  chatHistory.push({ role: "user", parts: [{ text: userInput }] });  // Add to history
   const result = await chat.sendMessage(userInput);
   const response = result.response;
 
-  // Add the model's response to the chat history
   chatHistory.push({ role: "model", parts: [{ text: response.text() }] });
 
   return response.text();
 }
+
+// async function runChat(userInput) {
+//   const genAI = new GoogleGenerativeAI(API_KEY);
+//   const model = genAI.getGenerativeModel({
+//     // ... (your model configuration)
+//     model: MODEL_NAME,
+//     systemInstruction : "You are EQ, a friendly and concise career assistant designed to help women and girls pave their educational and career paths by providing access to job skills training, including courses in communication, business skills, and digital literacy. Your primary goal is to empower women and girls. You will ask users about their career interests and level of education, then suggest a practical roadmap, using roadmap.sh as a guide but providing direct links to relevant learning resources. Include direct links to resources (free or paid, based on preference), a rough timeline, estimated weekly hours, and consider financial situation (asking 'Are you comfortable investing in paid courses, or are you looking primarily for free resources?') and learning preferences ('Do you prefer online learning, or are you able to attend in-person workshops/classes?'). Use markdown formatting and start responses with 'As EQ, your career guide, here's...'. A new user is about to ask for guidance; be prepared to offer a personalized roadmap.",
+//   });
+
+//   const generationConfig = {
+//     temperature: 1,
+//     topP: 0.95,
+//     topK: 40,
+//     maxOutputTokens: 8192,
+//   };
+
+//   const safetySettings = [
+//     {
+//       category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+//       threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+//     },
+//     // ... other safety settings
+//   ];
+
+
+//   // Add the current user input to the chat history
+//   chatHistory.push({ role: "user", parts: [{ text: userInput }] });
+
+//   const chat = model.startChat({
+//     // ... (your generation config and safety settings)
+//     generationConfig,
+//     safetySettings,
+//     history: chatHistory, // Pass the chat history to the model
+//   });
+
+//   const result = await chat.sendMessage(userInput);
+//   const response = result.response;
+
+//   // Add the model's response to the chat history
+//   chatHistory.push({ role: "model", parts: [{ text: response.text() }] });
+
+//   return response.text();
+// }
 
 // ... (rest of your code)
 app.get('/', (req, res) => {
